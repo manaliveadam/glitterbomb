@@ -11,7 +11,8 @@ local screenWidth = 400
 local screenHeight = 240
 
 local smoke = gfx.image.new("smoke")
-local spark = gfx.image.new("spark")
+local sparkImg = gfx.image.new("spark")
+local smokeSheet = gfx.imagetable.new("smokeSheet")
 
 local voice = gfx.font.new("Voice-9p-48-o")
 
@@ -19,149 +20,209 @@ dt = 0
 lasttime = 0
 
 local startWidth, startRate, startAngle, startSpread
-local particleSpawner
+local smokeSpawner, sparkSpawner, orbitSpawner, hoseSpawner
+
+local currentSpawner
+local demoMode = 1
+local modes
 
 function myGameSetUp()
 
-    -- particleSpawner=ParticleEmitter.new(smoke)
-    -- particleSpawner:setPosition(vector2.new(screenWidth/2,screenHeight/2))
-    -- particleSpawner:setEmissionRate(5)
-    -- particleSpawner:setParticleLifetime(3)
-    -- particleSpawner:setParticleSize(0.08,0.4)
-    -- particleSpawner:setParticleOpacity(0.9,0)
+    sparkImg = sparkImg:scaledImage(.02)
+    
+    smokeSpawner=AnimatedParticleEmitter.new(smokeSheet)
+    smokeSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
+    smokeSpawner:setEmissionRate(0)
+    smokeSpawner:setParticleLifetime(2)
+    smokeSpawner:setParticleSize(0.02,0.4)
+    smokeSpawner:setParticleOpacity(1,0)
+    smokeSpawner:setParticleUpdateDelay(2)
+    smokeSpawner:setEmissionForce(1)
+    smokeSpawner:setEmitterWidth(5.5)
+    smokeSpawner:setEmissionSpread(15)
+    smokeSpawner:setEmissionAngle(270)
+    smokeSpawner:setGravity(0)
+    smokeSpawner:setInheritVelocity(false)
 
-    -- particleSpawner:setEmissionForce(1)
-    -- particleSpawner:setEmitterWidth(0.0)
-    -- particleSpawner:setEmissionSpread(15)
-    -- particleSpawner:setEmissionAngle(270)
-    -- particleSpawner:setGravity(0)
-    -- particleSpawner:setInheritVelocity(false)
+    sparkSpawner=ParticleEmitter.new(sparkImg)
+    sparkSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
+    sparkSpawner:setEmissionRate(0)
+    sparkSpawner:setParticleLifetime(.5)
+    sparkSpawner:setParticleSize(0.02)
+    sparkSpawner:setParticleOpacity(1)
+    sparkSpawner:setParticleUpdateDelay(2)
+    sparkSpawner:setEmissionForce(7.5)
+    sparkSpawner:setEmitterWidth(5.5)
+    sparkSpawner:setEmissionSpread(90)
+    sparkSpawner:setEmissionAngle(270)
+    sparkSpawner:setGravity(9.8)
+    sparkSpawner:setInheritVelocity(true)
 
-    particleSpawner=ParticleEmitter.new(spark)
-    particleSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
-    particleSpawner:setEmissionRate(0)
-    particleSpawner:setParticleLifetime(1)
-    particleSpawner:setGravity(2.5)
-    particleSpawner:setParticleSize(0.02,0.02)
-    particleSpawner:setParticleOpacity(1,1)
-    particleSpawner:setParticleUpdateDelay(2)
-    particleSpawner:setEmissionForce(4)
-    particleSpawner:setEmitterWidth(5.5)
-    particleSpawner:setEmissionSpread(90)
-    particleSpawner:setEmissionAngle(270)
-    particleSpawner:setInheritVelocity(true)
+    orbitSpawner=AnimatedParticleEmitter.new(smokeSheet)
+    orbitSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
+    orbitSpawner:setEmissionRate(7.5)
+    orbitSpawner:setParticleLifetime(2)
+    orbitSpawner:setParticleSize(0.08,0.4)
+    orbitSpawner:setParticleOpacity(0.9,0)
+    orbitSpawner:setParticleUpdateDelay(2)
+    orbitSpawner:setEmissionForce(0)
+    orbitSpawner:setEmitterWidth(0)
+    orbitSpawner:setEmissionSpread(0)
+    orbitSpawner:setEmissionAngle(270)
+    orbitSpawner:setGravity(0)
+    orbitSpawner:setInheritVelocity(true)
 
-    startAngle = particleSpawner.emissionAngle
-    startWidth = particleSpawner.emitterWidth
-    startRate = particleSpawner.emissionRate
-    startSpread = particleSpawner.emissionSpread
+    hoseSpawner=ParticleEmitter.new(sparkImg)
+    hoseSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
+    hoseSpawner:setEmissionRate(100)
+    hoseSpawner:setParticleLifetime(1)
+    hoseSpawner:setParticleSize(0.02)
+    hoseSpawner:setParticleOpacity(1)
+    hoseSpawner:setParticleUpdateDelay(2)
+    hoseSpawner:setEmissionForce(7.5)
+    hoseSpawner:setEmitterWidth(0)
+    hoseSpawner:setEmissionSpread(15)
+    hoseSpawner:setEmissionAngle(270)
+    hoseSpawner:setGravity(9.8)
+    hoseSpawner:setInheritVelocity(false)
+    modes = {smokeSpawner,sparkSpawner,orbitSpawner,hoseSpawner}
+
+    currentSpawner = modes[demoMode]
+    currentSpawner:play()
 end
 
 myGameSetUp()
 
-local function changeWidth(percent)
-    percent*=2
-    percent += particleSpawner.emitterWidth
-    if percent < 0 then percent = 0 end
-    particleSpawner:setEmitterWidth(percent)
-    particleSpawner:setEmissionRate(startRate * (percent+1)/(startWidth+1))
+local function changeWidth(widthChange)
+    widthChange*=2
+    widthChange += currentSpawner.emitterWidth
+    if widthChange < 0 then widthChange = 0 end
+    particleSpawner:setEmitterWidth(widthChange)
+    particleSpawner:setEmissionRate(startRate * (widthChange+1)/(startWidth+1))
 end
 
-local function changeRate(percent)
-    percent *= 5
-    percent += particleSpawner.emissionRate
-    if percent < 0 then percent = 0 end
-    particleSpawner:setEmissionRate(percent)
+local function changeRate(rateChange)
+    rateChange *= 10
+    rateChange += currentSpawner.emissionRate
+    if rateChange < 0 then rateChange = 0 end
+    currentSpawner:setEmissionRate(rateChange)
 
 end
 
-local function changeAngle(percent)
-    percent*=50
-    percent += particleSpawner.emissionAngle
-    if percent < 0 then percent = 0
-    elseif percent > 360 then percent = 360 end
-    particleSpawner:setEmissionAngle(percent)
+local function changeAngle(angleChange)
+    angleChange*=360
+    angleChange += currentSpawner.emissionAngle
+    if angleChange < 0 then angleChange = 0
+    elseif angleChange > 360 then angleChange = 0 end
+    currentSpawner:setEmissionAngle(angleChange)
 end
 
-local function changeSpread(percent)
-    percent*=50
-    percent += particleSpawner.emissionSpread
-    if percent < 0 then percent = 0
-    elseif percent > 360 then percent = 360 end
-    particleSpawner:setEmissionSpread(percent)
-    particleSpawner:setEmissionRate(startRate * (percent+1)/(startSpread+1))
+local function changeSpread(spreadChange)
+    spreadChange*=50
+    spreadChange += currentSpawner.emissionSpread
+    if spreadChange < 0 then spreadChange = 0
+    elseif spreadChange >= 360 then spreadChange = 0 end
+    currentSpawner:setEmissionSpread(spreadChange)
+    currentSpawner:setEmissionRate(startRate * (spreadChange+1)/(startSpread+1))
 end
 
-local function changeForce(percent)
-    percent*=1
-    percent += particleSpawner.emissionForce
-    if percent < 0 then percent = 0 end
-    particleSpawner:setEmissionForce(percent)
+local function changeForce(forceChange)
+    forceChange*=1
+    forceChange += currentSpawner.emissionForce
+    if forceChange < 0 then forceChange = 0 end
+    currentSpawner:setEmissionForce(forceChange)
 end
 
-local function changeDelay(percent)
-    percent*=1
-    percent += particleSpawner.particleUpdateDelay
-    if percent < 0 then percent = 0 end
-    particleSpawner:setParticleUpdateDelay(percent)
+local function changeDelay(delayChange)
+    delayChange*=1
+    delayChange += currentSpawner.particleUpdateDelay
+    if delayChange < 0 then delayChange = 0 end
+    currentSpawner:setParticleUpdateDelay(delayChange)
+end
+
+local function spark(amount)
+    changeRate(amount)
+    if currentSpawner.emissionRate > 100 then currentSpawner.emissionRate = 100 end
+end
+
+local function smoke(amount)
+    changeRate(amount/4)
+    if currentSpawner.emissionRate > 25 then currentSpawner.emissionRate = 25 end
+end
+
+local orbitAngle=270
+local function orbit(amount)
+    amount*=50
+    orbitAngle+=amount
+    currentSpawner:setPosition({x=screenWidth/2 + math.cos(math.rad(orbitAngle))*screenHeight/4,y=screenHeight/2 + math.sin(math.rad(orbitAngle))*screenHeight/4})
+end
+
+local function hose(amount)
+    changeAngle(amount)
+end
+
+local function switchModes(direction)
+    currentSpawner:pause()
+    demoMode+=direction
+    if demoMode > #modes then demoMode = 1
+    elseif demoMode < 1 then demoMode = #modes end
+    currentSpawner = modes[demoMode]
+    if currentSpawner == orbitSpawner then
+        currentSpawner:setPosition({x=screenWidth/2,y=screenHeight/4})
+    else
+        currentSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
+    end
+    currentSpawner:play()
 end
 
 local function Draw()
     gfx.clear()
-    voice:drawText("glitterbomb",screenWidth/2-26*5.5,screenHeight/2-26)
-    particleSpawner:draw()
+    -- for i,v in ipairs(modes) do if #v.particles>0 then v:draw() end end
+    currentSpawner:draw()
+    voice:drawTextAligned("glitterbomb",screenWidth/2,screenHeight/2-39,kTextAlignment.center)
+    gfx.drawTextAligned("crank to engage",screenWidth/2,screenHeight/2+13,kTextAlignment.center)
     playdate.drawFPS(0, 0)
-    gfx.drawText(particleSpawner.emissionRate,screenWidth/2, 0)
+    gfx.drawText(currentSpawner.emissionRate,screenWidth/2, 0)
 end
 
-local percent = 270
 local crankSpeed = 1/12
+local crankChange
+local crankEffect
 
 function playdate.update()
-    if playdate.buttonIsPressed( playdate.kButtonRight ) then
-		particleSpawner.velocity.x += 25*dt
-        if particleSpawner.velocity.x < 0 then
-            particleSpawner.velocity.x += 25*dt
-        end
-	elseif playdate.buttonIsPressed( playdate.kButtonLeft ) then
-		particleSpawner.velocity.x -= 25*dt
-        if particleSpawner.velocity.x > 0 then
-            particleSpawner.velocity.x -= 25*dt
-        end
-    elseif playdate.buttonIsPressed( playdate.kButtonDown ) then
-		particleSpawner.velocity.y += 25*dt
-        if particleSpawner.velocity.y < 0 then
-            particleSpawner.velocity.y += 25*dt
-        end
-	elseif playdate.buttonIsPressed( playdate.kButtonUp ) then
-		particleSpawner.velocity.y -= 25*dt
-        if particleSpawner.velocity.y > 0 then
-            particleSpawner.velocity.y -= 25*dt
-        end
-    else
-        if math.abs(particleSpawner.velocity.x) > 25*dt then
-            particleSpawner.velocity.x = particleSpawner.velocity.x - 25*particleSpawner.velocity.x*dt/math.abs(particleSpawner.velocity.x)
-        end
-        if math.abs(particleSpawner.velocity.y) > 25*dt then
-            particleSpawner.velocity.y = particleSpawner.velocity.y - 25*particleSpawner.velocity.y*dt/math.abs(particleSpawner.velocity.y)
-        end
+    if playdate.buttonJustPressed( playdate.kButtonRight ) then
+        switchModes(1)
+	elseif playdate.buttonJustPressed( playdate.kButtonLeft ) then
+        switchModes(-1)
+    elseif playdate.buttonJustPressed( playdate.kButtonDown ) then
+        switchModes(-1)
+	elseif playdate.buttonJustPressed( playdate.kButtonUp ) then
+        switchModes(1)
 	end
 
-    local crankChange = playdate.getCrankChange()
+    crankChange = playdate.getCrankChange()
     if crankChange ~= 0 then
-        percent = crankChange * crankSpeed * dt
-        -- changeDelay(percent)
-        changeRate(percent)
-        -- changeAngle(percent)
-        -- changeForce(percent)
-        -- changeSpread(percent)
-        -- changeWidth(percent)
-
+        crankEffect = crankChange * crankSpeed * dt
+        if modes[demoMode] == sparkSpawner then
+            spark(crankEffect)
+            -- changeRate(crankEffect)
+        elseif modes[demoMode] == smokeSpawner then
+            smoke(crankEffect)
+            -- changeRate(crankEffect)
+        elseif modes[demoMode] == orbitSpawner then
+            orbit(crankEffect)
+            -- changeRate(crankEffect)
+        elseif modes[demoMode] == hoseSpawner then
+            hose(crankEffect)
+            -- changeRate(crankEffect)
+        end        
+    elseif modes[demoMode] == sparkSpawner or modes[demoMode] == smokeSpawner then
+        changeRate(-.1)
     end
 
     dt = (playdate.getCurrentTimeMilliseconds() - lasttime)/1000
 	lasttime = playdate.getCurrentTimeMilliseconds()
-
-    particleSpawner:update()
+    currentSpawner:update()
+    -- for i,v in ipairs(modes) do if v.spawning or #v.particles>0 then v:update() end end
     Draw()
 end

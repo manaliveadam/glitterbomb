@@ -17,7 +17,8 @@ local function spriteInit(image,position)
     return newSprite
 end
 
-local function lerp(starting,ending,percent)
+--make local
+ local function lerp(starting,ending,percent)
     local amt = starting+(ending-starting)*percent
     return amt
 end
@@ -44,8 +45,8 @@ function Particle:init(newParticle)
     self.active = true
     self.position = newParticle.position
     self.velocity = newParticle.velocity
-    self.image = newParticle.image
-    self.drawImage = newParticle.image
+    -- self.image = newParticle.image
+    -- self.drawImage = newParticle.image
     self.skipped = 0
 
     self:setSize(newParticle.size)
@@ -62,11 +63,11 @@ end
 
 --maybe combine size + opacity into one function to avoid ordering issue
 function Particle:setSize(size)
-    self.drawImage = self.image:scaledImage(size)
+    -- self.drawImage = self.image:scaledImage(size)
 end
 
 function Particle:setOpacity(opacity)
-    self.drawImage = self.drawImage:fadedImage(opacity, gfx.image.kDitherTypeBayer8x8)
+    -- self.drawImage = self.drawImage:fadedImage(opacity, gfx.image.kDitherTypeBayer8x8)
 end
 
 function Particle:setFrameDelay(delay)
@@ -76,10 +77,6 @@ end
 function Particle:addForce(force)
     self.velocity.x += force.x
     self.velocity.y += force.y
-end
-
-function Particle:getTime()
-    return self.lifetime
 end
 
 function Particle:update()
@@ -100,6 +97,8 @@ function ParticleEmitter:init(image, newEmitter)
     newEmitter = newEmitter or {}
 
     self.image=image
+    self.drawOffset = {x=0,y=0}
+    self.drawOffset.x,self.drawOffset.y= self.image:getSize()
 
     self.position = newEmitter.position or {x=0,y=0}
 
@@ -109,7 +108,7 @@ function ParticleEmitter:init(image, newEmitter)
     self.emissionAngle =newEmitter.emissionAngle or  270
     self.emissionSpread =newEmitter.emissionSpread or  0
 
-    self.spawning = true
+    self.spawning = self.spawning or false
     self.particles = {}
     self.particleIndex = 1
 
@@ -140,7 +139,6 @@ end
 function ParticleEmitter:setEmissionRate(rate)
     self.emissionRate = rate
     self.maxParticles = math.ceil(self.emissionRate * self.particleLifetime + 2)
-    print("max changed to ",self.maxParticles)
 end
 
 function ParticleEmitter:setEmissionForce(force)
@@ -215,7 +213,14 @@ function ParticleEmitter:play()
 end
 
 function ParticleEmitter:draw()
-    for i,v in ipairs(self.particles) do if v.active then v.drawImage:draw((v.position.x+.5)//1,(v.position.y+.5)//1) end end
+    local xoff = self.drawOffset.x/2
+    local yoff = self.drawOffset.y/2
+    for i,v in ipairs(self.particles) do
+        if v.active then
+            self.image:draw(v.position.x+xoff,v.position.y+yoff)
+        end
+    end
+    -- for i,v in ipairs(self.particles) do if v.active then v.drawImage:drawCentered((v.position.x+.5)//1,(v.position.y+.5)//1) end end
 end
 
 function ParticleEmitter:spawn(spawnForce, emissionSize)
@@ -253,7 +258,6 @@ function ParticleEmitter:spawn(spawnForce, emissionSize)
 end
 
 function ParticleEmitter:update()
-
     local currentParticle
     local currentParticleTime
     local randomForce
@@ -278,9 +282,8 @@ function ParticleEmitter:update()
         if currentParticle.active then
             currentParticleTime = currentParticle.lifetime
             lifePercent = currentParticleTime/self.particleLifetime
-
             if lifePercent > 1 then
-                if #self.particles > self.maxParticles then
+                if #self.particles > self.maxParticles or self.spawning~=true then
                     table.remove(self.particles,i)
                     if i< self.particleIndex then
                         self.particleIndex -= 1
@@ -300,63 +303,41 @@ function ParticleEmitter:update()
                 else
                     currentParticle.skipped+=1
                 end
-
                 currentParticle:update()
-                if self.animateSize then
-                    currentParticle:setSize(lerp(self.startSize,self.endSize,lifePercent))
-                end
-                if self.animateOpacity then
-                    currentParticle:setOpacity(lerp(self.startOpacity,self.endOpacity,lifePercent))
-                end
+                if currentParticle.lifetime > self.particleLifetime then currentParticle.lifetime = self.particleLifetime end
+                -- if self.animateSize then
+                --     currentParticle:setSize(lerp(self.startSize,self.endSize,lifePercent))
+                -- end
+                -- if self.animateOpacity then
+                --     currentParticle:setOpacity(lerp(self.startOpacity,self.endOpacity,lifePercent))
+                -- end
 
             end
         end
     end
 end
 
-local function changeWidth(percent)
-    percent*=2
-    percent += particleSpawner.emitterWidth
-    if percent < 0 then percent = 0 end
-    particleSpawner:setEmitterWidth(percent)
-    particleSpawner:setEmissionRate(startRate * (percent+1)/(startWidth+1))
+class('AnimatedParticleEmitter').extends(ParticleEmitter)
+function AnimatedParticleEmitter.new(image, newEmitter)
+    return AnimatedParticleEmitter(image, newEmitter)
 end
 
-local function changeRate(percent)
-    percent *= 5
-    percent += particleSpawner.emissionRate
-    if percent < 0 then percent = 0 end
-    particleSpawner:setEmissionRate(percent)
-
+function AnimatedParticleEmitter:init(image, newEmitter)
+    AnimatedParticleEmitter.super:init(image,newEmitter)
+    self.drawOffset.x,self.drawOffset.y= self.image:getImage(1):getSize()
 end
 
-local function changeAngle(percent)
-    percent*=50
-    percent += particleSpawner.emissionAngle
-    if percent < 0 then percent = 0
-    elseif percent > 360 then percent = 360 end
-    particleSpawner:setEmissionAngle(percent)
-end
-
-local function changeSpread(percent)
-    percent*=50
-    percent += particleSpawner.emissionSpread
-    if percent < 0 then percent = 0
-    elseif percent > 360 then percent = 360 end
-    particleSpawner:setEmissionSpread(percent)
-    particleSpawner:setEmissionRate(startRate * (percent+1)/(startSpread+1))
-end
-
-local function changeForce(percent)
-    percent*=1
-    percent += particleSpawner.emissionForce
-    if percent < 0 then percent = 0 end
-    particleSpawner:setEmissionForce(percent)
-end
-
-local function changeDelay(percent)
-    percent*=1
-    percent += particleSpawner.particleUpdateDelay
-    if percent < 0 then percent = 0 end
-    particleSpawner:setParticleUpdateDelay(percent)
+function AnimatedParticleEmitter:draw()
+    local xoff = self.drawOffset.x/2
+    local yoff = self.drawOffset.y/2
+    local totalFrames = self.image:getLength()
+    local currentFrame
+    local currentImage
+    for i,v in ipairs(self.particles) do
+        if v.active then
+            currentFrame = lerp(1,totalFrames,v.lifetime/self.particleLifetime)//1
+            currentImage = self.image:getImage(currentFrame)
+            currentImage:draw(v.position.x-xoff,v.position.y-yoff)
+        end
+    end
 end
