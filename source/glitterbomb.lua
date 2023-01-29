@@ -323,7 +323,7 @@ function AnimatedParticleEmitter.new(image, newEmitter)
 end
 
 function AnimatedParticleEmitter:init(image, newEmitter)
-    AnimatedParticleEmitter.super:init(image,newEmitter)
+    AnimatedParticleEmitter.super.init(self,image,newEmitter)
     self.drawOffset.x,self.drawOffset.y= self.image:getImage(1):getSize()
 end
 

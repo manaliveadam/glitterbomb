@@ -47,7 +47,7 @@ function myGameSetUp()
     sparkSpawner=ParticleEmitter.new(sparkImg)
     sparkSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
     sparkSpawner:setEmissionRate(0)
-    sparkSpawner:setParticleLifetime(.5)
+    sparkSpawner:setParticleLifetime(1)
     sparkSpawner:setParticleSize(0.02)
     sparkSpawner:setParticleOpacity(1)
     sparkSpawner:setParticleUpdateDelay(2)
@@ -60,8 +60,8 @@ function myGameSetUp()
 
     orbitSpawner=AnimatedParticleEmitter.new(smokeSheet)
     orbitSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
-    orbitSpawner:setEmissionRate(7.5)
-    orbitSpawner:setParticleLifetime(2)
+    orbitSpawner:setEmissionRate(8)
+    orbitSpawner:setParticleLifetime(3)
     orbitSpawner:setParticleSize(0.08,0.4)
     orbitSpawner:setParticleOpacity(0.9,0)
     orbitSpawner:setParticleUpdateDelay(2)
@@ -112,7 +112,7 @@ end
 local function changeAngle(angleChange)
     angleChange*=360
     angleChange += currentSpawner.emissionAngle
-    if angleChange < 0 then angleChange = 0
+    if angleChange < 0 then angleChange = 360
     elseif angleChange > 360 then angleChange = 0 end
     currentSpawner:setEmissionAngle(angleChange)
 end
@@ -179,8 +179,10 @@ local function Draw()
     gfx.clear()
     -- for i,v in ipairs(modes) do if #v.particles>0 then v:draw() end end
     currentSpawner:draw()
-    voice:drawTextAligned("glitterbomb",screenWidth/2,screenHeight/2-39,kTextAlignment.center)
-    gfx.drawTextAligned("crank to engage",screenWidth/2,screenHeight/2+13,kTextAlignment.center)
+    voice:drawTextAligned("glitterbomb",screenWidth/2,screenHeight/2-40,kTextAlignment.center)
+    gfx.drawTextAligned("crank to engage",screenWidth/2,screenHeight/2+15,kTextAlignment.center)
+    gfx.drawTextAligned(demoMode,screenWidth/2,screenHeight/2+40,kTextAlignment.center)
+
     playdate.drawFPS(0, 0)
     gfx.drawText(currentSpawner.emissionRate,screenWidth/2, 0)
 end
@@ -205,16 +207,12 @@ function playdate.update()
         crankEffect = crankChange * crankSpeed * dt
         if modes[demoMode] == sparkSpawner then
             spark(crankEffect)
-            -- changeRate(crankEffect)
         elseif modes[demoMode] == smokeSpawner then
             smoke(crankEffect)
-            -- changeRate(crankEffect)
         elseif modes[demoMode] == orbitSpawner then
             orbit(crankEffect)
-            -- changeRate(crankEffect)
         elseif modes[demoMode] == hoseSpawner then
             hose(crankEffect)
-            -- changeRate(crankEffect)
         end        
     elseif modes[demoMode] == sparkSpawner or modes[demoMode] == smokeSpawner then
         changeRate(-.1)
