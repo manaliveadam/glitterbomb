@@ -7,10 +7,9 @@ import "glitterbomb"
 
 local vector2 <const> = playdate.geometry.vector2D
 local gfx <const> = playdate.graphics
-local screenWidth = 400
-local screenHeight = 240
+local screenWidth <const> = 400
+local screenHeight <const> = 240
 
-local smoke = gfx.image.new("smoke")
 local sparkImg = gfx.image.new("spark")
 local smokeSheet = gfx.imagetable.new("smokeSheet")
 
@@ -30,12 +29,12 @@ function myGameSetUp()
 
     sparkImg = sparkImg:scaledImage(.02)
     
+    --can either create emitters by passing a table with all the variable settings
+    -- or by setting each variable manually (below)
     smokeSpawner=AnimatedParticleEmitter.new(smokeSheet)
     smokeSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
     smokeSpawner:setEmissionRate(0)
     smokeSpawner:setParticleLifetime(2)
-    smokeSpawner:setParticleSize(0.02,0.4)
-    smokeSpawner:setParticleOpacity(1,0)
     smokeSpawner:setParticleUpdateDelay(2)
     smokeSpawner:setEmissionForce(1)
     smokeSpawner:setEmitterWidth(5.5)
@@ -48,8 +47,6 @@ function myGameSetUp()
     sparkSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
     sparkSpawner:setEmissionRate(0)
     sparkSpawner:setParticleLifetime(1)
-    sparkSpawner:setParticleSize(0.02)
-    sparkSpawner:setParticleOpacity(1)
     sparkSpawner:setParticleUpdateDelay(2)
     sparkSpawner:setEmissionForce(7.5)
     sparkSpawner:setEmitterWidth(5.5)
@@ -62,8 +59,6 @@ function myGameSetUp()
     orbitSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
     orbitSpawner:setEmissionRate(8)
     orbitSpawner:setParticleLifetime(3)
-    orbitSpawner:setParticleSize(0.08,0.4)
-    orbitSpawner:setParticleOpacity(0.9,0)
     orbitSpawner:setParticleUpdateDelay(2)
     orbitSpawner:setEmissionForce(0)
     orbitSpawner:setEmitterWidth(0)
@@ -76,8 +71,6 @@ function myGameSetUp()
     hoseSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
     hoseSpawner:setEmissionRate(100)
     hoseSpawner:setParticleLifetime(1)
-    hoseSpawner:setParticleSize(0.02)
-    hoseSpawner:setParticleOpacity(1)
     hoseSpawner:setParticleUpdateDelay(2)
     hoseSpawner:setEmissionForce(7.5)
     hoseSpawner:setEmitterWidth(0)
@@ -85,20 +78,21 @@ function myGameSetUp()
     hoseSpawner:setEmissionAngle(270)
     hoseSpawner:setGravity(9.8)
     hoseSpawner:setInheritVelocity(false)
-    modes = {smokeSpawner,sparkSpawner,orbitSpawner,hoseSpawner}
 
+    modes = {smokeSpawner,sparkSpawner,orbitSpawner,hoseSpawner}
     currentSpawner = modes[demoMode]
     currentSpawner:play()
 end
 
 myGameSetUp()
 
+--helper functions to convert crank input into emitter value changes
 local function changeWidth(widthChange)
     widthChange*=2
     widthChange += currentSpawner.emitterWidth
     if widthChange < 0 then widthChange = 0 end
-    particleSpawner:setEmitterWidth(widthChange)
-    particleSpawner:setEmissionRate(startRate * (widthChange+1)/(startWidth+1))
+    currentSpawner:setEmitterWidth(widthChange)
+    currentSpawner:setEmissionRate(startRate * (widthChange+1)/(startWidth+1))
 end
 
 local function changeRate(rateChange)
@@ -140,24 +134,25 @@ local function changeDelay(delayChange)
     currentSpawner:setParticleUpdateDelay(delayChange)
 end
 
-local function spark(amount)
+--functions for different demo modes
+local function sparkEffect(amount)
     changeRate(amount)
     if currentSpawner.emissionRate > 100 then currentSpawner.emissionRate = 100 end
 end
 
-local function smoke(amount)
+local function smokeEffect(amount)
     changeRate(amount/4)
     if currentSpawner.emissionRate > 25 then currentSpawner.emissionRate = 25 end
 end
 
 local orbitAngle=270
-local function orbit(amount)
+local function orbitEffect(amount)
     amount*=50
     orbitAngle+=amount
     currentSpawner:setPosition({x=screenWidth/2 + math.cos(math.rad(orbitAngle))*screenHeight/4,y=screenHeight/2 + math.sin(math.rad(orbitAngle))*screenHeight/4})
 end
 
-local function hose(amount)
+local function hoseEffect(amount)
     changeAngle(amount)
 end
 
@@ -177,8 +172,7 @@ end
 
 local function Draw()
     gfx.clear()
-    -- for i,v in ipairs(modes) do if #v.particles>0 then v:draw() end end
-    currentSpawner:draw()
+    for i,v in ipairs(modes) do if #v.particles>0 then v:draw() end end
     voice:drawTextAligned("glitterbomb",screenWidth/2,screenHeight/2-40,kTextAlignment.center)
     gfx.drawTextAligned("crank to engage",screenWidth/2,screenHeight/2+15,kTextAlignment.center)
     gfx.drawTextAligned(demoMode,screenWidth/2,screenHeight/2+40,kTextAlignment.center)
@@ -189,7 +183,7 @@ end
 
 local crankSpeed = 1/12
 local crankChange
-local crankEffect
+local crankAmount
 
 function playdate.update()
     if playdate.buttonJustPressed( playdate.kButtonRight ) then
@@ -204,15 +198,15 @@ function playdate.update()
 
     crankChange = playdate.getCrankChange()
     if crankChange ~= 0 then
-        crankEffect = crankChange * crankSpeed * dt
+        crankAmount = crankChange * crankSpeed * dt
         if modes[demoMode] == sparkSpawner then
-            spark(crankEffect)
+            sparkEffect(crankAmount)
         elseif modes[demoMode] == smokeSpawner then
-            smoke(crankEffect)
+            smokeEffect(crankAmount)
         elseif modes[demoMode] == orbitSpawner then
-            orbit(crankEffect)
+            orbitEffect(crankAmount)
         elseif modes[demoMode] == hoseSpawner then
-            hose(crankEffect)
+            hoseEffect(crankAmount)
         end        
     elseif modes[demoMode] == sparkSpawner or modes[demoMode] == smokeSpawner then
         changeRate(-.1)
@@ -220,7 +214,8 @@ function playdate.update()
 
     dt = (playdate.getCurrentTimeMilliseconds() - lasttime)/1000
 	lasttime = playdate.getCurrentTimeMilliseconds()
-    currentSpawner:update()
-    -- for i,v in ipairs(modes) do if v.spawning or #v.particles>0 then v:update() end end
+
+    for i,v in ipairs(modes) do if v.spawning or #v.particles>0 then v:update() end end
+    
     Draw()
 end
