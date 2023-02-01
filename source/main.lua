@@ -4,6 +4,7 @@ import "CoreLibs/sprites"
 import "CoreLibs/timer"
 import "CoreLibs/animation"
 import "glitterbomb"
+import "glitterglue"
 
 local vector2 <const> = playdate.geometry.vector2D
 local gfx <const> = playdate.graphics
@@ -12,6 +13,7 @@ local screenHeight <const> = 240
 
 local sparkImg = gfx.image.new("spark")
 local smokeSheet = gfx.imagetable.new("smokeSheet")
+local sparkSheet = gfx.imagetable.new("sparkSheet")
 
 local voice = gfx.font.new("Voice-9p-48-o")
 
@@ -28,10 +30,20 @@ local modes
 function myGameSetUp()
 
     sparkImg = sparkImg:scaledImage(.02)
+
+    --can un-comment this to generate a sprite sheet
+    --animating a particle's size/opacity
+
+    -- local sparkSheetSpawner = ParticleEmitter.new(sparkImg)
+    -- sparkSheetSpawner:setParticleOpacity(1,0)
+    -- sparkSheetSpawner:setParticleSize(1,0)
+    -- sparkSheetSpawner:setParticleLifetime(1)
+    -- glueSheet(sparkSheetSpawner,"/sparkSheet.gif",30)
     
     --can either create emitters by passing a table with all the variable settings
     -- or by setting each variable manually (below)
     smokeSpawner=AnimatedParticleEmitter.new(smokeSheet)
+    smokeSpawner:setNumFrames(60)
     smokeSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
     smokeSpawner:setEmissionRate(0)
     smokeSpawner:setParticleLifetime(2)
@@ -43,7 +55,8 @@ function myGameSetUp()
     smokeSpawner:setGravity(0)
     smokeSpawner:setInheritVelocity(false)
 
-    sparkSpawner=ParticleEmitter.new(sparkImg)
+    sparkSpawner=AnimatedParticleEmitter.new(sparkSheet)
+    smokeSpawner:setNumFrames(30)
     sparkSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
     sparkSpawner:setEmissionRate(0)
     sparkSpawner:setParticleLifetime(1)
@@ -56,6 +69,7 @@ function myGameSetUp()
     sparkSpawner:setInheritVelocity(true)
 
     orbitSpawner=AnimatedParticleEmitter.new(smokeSheet)
+    smokeSpawner:setNumFrames(60)
     orbitSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
     orbitSpawner:setEmissionRate(8)
     orbitSpawner:setParticleLifetime(3)

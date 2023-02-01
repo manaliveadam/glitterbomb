@@ -9,7 +9,8 @@ local gfx <const> = playdate.graphics
 local screenWidth <const> = 400
 local screenHeight <const> = 240
 
- local function lerp(starting,ending,percent)
+--todo make local?
+function lerp(starting,ending,percent)
     local amt = starting+(ending-starting)*percent
     return amt
 end
@@ -104,6 +105,10 @@ function ParticleEmitter:setPosition(pos)
     self.position = pos
 end
 
+function ParticleEmitter:setVelocity(v)
+    self.velocity = v
+end
+
 function ParticleEmitter:setEmissionRate(rate)
     self.emissionRate = rate
     self.maxParticles = math.ceil(self.emissionRate * self.particleLifetime)
@@ -133,6 +138,17 @@ end
 
 function ParticleEmitter:setParticleUpdateDelay(delay)
     self.particleUpdateDelay = delay
+end
+
+--these are only used for generating sprite sheets
+function ParticleEmitter:setParticleSize(startSize,endSize)
+    self.startSize = startSize
+    self.endSize = endSize or startSize
+end
+
+function ParticleEmitter:setParticleOpacity(startO,endO)
+    self.startOpacity = startO
+    self.endOpacity = endO or startO
 end
 
 --other settings
@@ -273,10 +289,16 @@ function AnimatedParticleEmitter:init(image, newEmitter)
     self.drawOffset.x,self.drawOffset.y= self.image:getImage(1):getSize()
     self.drawOffset.x /= 2
     self.drawOffset.y /= 2
+
+    self.numFrames = self.image:getLength()
+end
+
+function AnimatedParticleEmitter:setNumFrames(num)
+    self.numFrames = num
 end
 
 function AnimatedParticleEmitter:draw()
-    local totalFrames = self.image:getLength()
+    local totalFrames = self.numFrames
     local currentFrame
     local currentImage
     for i,v in ipairs(self.particles) do

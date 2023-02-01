@@ -1,31 +1,46 @@
-local numFrames = 30*smokeSpawner.particleLifetime
-print(numFrames,"frames")
-local frameWidth,frameHeight = smokeSpawner.image:getSize()
-print(frameWidth,"x",frameHeight)
-local frameSize = math.max(frameWidth,frameHeight) * math.max(smokeSpawner.startSize,smokeSpawner.endSize)
-print(frameSize,"frame size")
-local sheetDimension = math.ceil(math.sqrt(numFrames))
-print(sheetDimension,"sheet size")
-local smokeCanvas = gfx.image.new(sheetDimension*frameSize,sheetDimension*frameSize)
+import "CoreLibs/object"
+import "CoreLibs/graphics"
+import "CoreLibs/sprites"
+import "CoreLibs/timer"
+import "CoreLibs/animation"
+import "glitterbomb"
+import "glitterglue"
 
-local currentOpacity = smokeSpawner.startOpacity
-local currentSize = smokeSpawner.startSize
+local vector2 <const> = playdate.geometry.vector2D
+local gfx <const> = playdate.graphics
+local screenWidth <const> = 400
+local screenHeight <const> = 240
 
-local currentFrame
+function glueSheet(emitter,name,fps)
 
-local percent = 0
+    local fileName = name or "/glueSheet.gif"
+    local frameRate = fps or 30
 
-gfx.pushContext(smokeCanvas)
-for y=0,sheetDimension-1 do
-    for x=0,sheetDimension-1 do
-        percent = (y*sheetDimension+x)/numFrames
-        if percent <= 1 then
-            currentSize = lerp(smokeSpawner.startSize,smokeSpawner.endSize,percent)
-            currentOpacity = lerp(smokeSpawner.startOpacity,smokeSpawner.endOpacity,percent)
-            currentFrame = smokeSpawner.image:scaledImage(currentSize)
-            currentFrame = currentFrame:fadedImage(currentOpacity,gfx.image.kDitherTypeBayer8x8)
-            currentFrame:drawCentered((x+.5)*frameSize,(y+.5)*frameSize)
+    local numFrames = frameRate*emitter.particleLifetime
+    local frameWidth,frameHeight = emitter.image:getSize()
+    local frameSize = math.max(frameWidth,frameHeight) * math.max(emitter.startSize,emitter.endSize)
+    local sheetDimension = math.ceil(math.sqrt(numFrames))
+    local canvas = gfx.image.new(sheetDimension*frameSize,sheetDimension*frameSize)
+
+    local currentOpacity = emitter.startOpacity
+    local currentSize = emitter.startSize
+
+    local currentFrame
+
+    local percent = 0
+
+    gfx.pushContext(canvas)
+    for y=0,sheetDimension-1 do
+        for x=0,sheetDimension-1 do
+            percent = (y*sheetDimension+x)/numFrames
+            if percent <= 1 then
+                currentSize = lerp(emitter.startSize,emitter.endSize,percent)
+                currentOpacity = lerp(emitter.startOpacity,emitter.endOpacity,percent)
+                currentFrame = emitter.image:scaledImage(currentSize)
+                currentFrame = currentFrame:fadedImage(currentOpacity,gfx.image.kDitherTypeBayer8x8)
+                currentFrame:drawCentered((x+.5)*frameSize,(y+.5)*frameSize)
+            end
         end
     end
+    playdate.datastore.writeImage(canvas,fileName)
 end
-playdate.datastore.writeImage(smokeCanvas,"smokeSheet.gif")
