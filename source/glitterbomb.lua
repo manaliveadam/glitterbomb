@@ -94,7 +94,6 @@ function ParticleEmitter:init(image, newEmitter)
     self.inheritVelocity = newEmitter.inheritVelocity or true
     self.gravity = newEmitter.gravity or 9.8
     self.worldScale = newEmitter.worldScale or  50
-    self.looping = newEmitter.looping or false
 
     self.spawning = newEmitter.spawning or false
     self.spawnTime = 0
