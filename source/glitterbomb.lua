@@ -92,7 +92,7 @@ function ParticleEmitter:init(image, newEmitter)
     self.particleLifetime = newEmitter.particleLifetime or 1
     self.particleUpdateDelay = newEmitter.particleUpdateDelay or  0
 
-    self.maxParticles = math.ceil(self.emissionRate * self.particleLifetime + 2)
+    self.maxParticles = math.ceil(self.emissionRate * self.particleLifetime)
 
     self.velocity={x=0,y=0}
     self.inheritVelocity = newEmitter.inheritVelocity or true
@@ -185,10 +185,11 @@ function ParticleEmitter:draw()
     end
 end
 
-function ParticleEmitter:spawnParticle(spawnForce)
+function ParticleEmitter:spawnParticle(spawnForce,index)
     local spawnOffset = (random() - 0.5) * self.emitterWidth * self.worldScale
     local perpAngle = rad(self.emissionAngle+90)
     local offsetVector = {x = cos(perpAngle)*spawnOffset, y = sin(perpAngle)*spawnOffset}
+    local spawnIndex = spawnIndex or #self.particles+1
 
     local newParticle
         
@@ -211,7 +212,7 @@ function ParticleEmitter:spawnParticle(spawnForce)
         end
     else
         newParticle={position = {x=self.position.x + offsetVector.x, y=self.position.y + offsetVector.y}, velocity = spawnForce, image = self.image}
-        self.particles[#self.particles+1] = Particle.new(newParticle)
+        table.insert(self.particles,spawnIndex,Particle.new(newParticle))
     end
 
     if self.inheritVelocity then
@@ -222,15 +223,14 @@ end
 
 --todo make this play nicely with other bursts
 function ParticleEmitter:burst(burstSize)
+    local insertPoint = self.particleIndex - 1
+    if insertPoint <= 0 then insertPoint = #self.particles+1 end
     self.maxParticles += burstSize
     for i=1, burstSize do
         randomForce = forceRandomRange(self.emissionAngle,self.emissionSpread,self.emissionForce)
         self:spawnParticle({x=randomForce.x*self.worldScale,y=randomForce.y*self.worldScale})
     end
-    self.maxParticles -= burstSize
 end
-
-
 
 function ParticleEmitter:updateParticles()
     local currentParticle

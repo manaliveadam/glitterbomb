@@ -225,10 +225,11 @@ function playdate.update()
         elseif modes[demoMode] == orbitSpawner then
             orbitEffect(crankAmount)
         elseif modes[demoMode] == hoseSpawner then
-            hoseEffect(crankAmount)
+            -- hoseEffect(crankAmount)
+            changeRate(crankAmount)
         end        
     elseif modes[demoMode] == sparkSpawner or modes[demoMode] == smokeSpawner then
-        changeRate(-.1)
+        -- changeRate(-.1)
     end
 
     dt = (playdate.getCurrentTimeMilliseconds() - lasttime)/1000
