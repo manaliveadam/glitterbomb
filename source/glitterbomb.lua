@@ -6,6 +6,10 @@ import "CoreLibs/animation"
 
 local vector2 <const> = playdate.geometry.vector2D
 local gfx <const> = playdate.graphics
+local cos <const> = math.cos
+local sin <const> = math.sin
+local rad <const> = math.rad
+local random <const> = math.random
 local screenWidth <const> = 400
 local screenHeight <const> = 240
 
@@ -15,11 +19,11 @@ function lerp(starting,ending,percent)
     return amt
 end
 
---todo: 
+--todo: allow for other spawning patterns besides random
 local function forceRandomRange(angle,range,force)
-    angle = angle + range * (math.random()-0.5)
-    local x = math.cos(math.rad(angle))
-    local y = math.sin(math.rad(angle))
+    angle = angle + range * (random()-0.5)
+    local x = cos(rad(angle))
+    local y = sin(rad(angle))
     return({x=x*force,y=y*force})
 end
 
@@ -163,10 +167,6 @@ function ParticleEmitter:setWorldScale(scale)
     self.worldScale = scale
 end
 
-function ParticleEmitter:setLooping(looping)
-    self.looping = looping
-end
-
 function ParticleEmitter:pause()
     self.spawning = false
 end
@@ -185,10 +185,10 @@ function ParticleEmitter:draw()
     end
 end
 
-function ParticleEmitter:spawn(spawnForce)
-    local spawnOffset = (math.random() - 0.5) * self.emitterWidth * self.worldScale
-    local perpAngle = math.rad(self.emissionAngle+90)
-    local offsetVector = {x = math.cos(perpAngle)*spawnOffset, y = math.sin(perpAngle)*spawnOffset}
+function ParticleEmitter:spawnParticle(spawnForce)
+    local spawnOffset = (random() - 0.5) * self.emitterWidth * self.worldScale
+    local perpAngle = rad(self.emissionAngle+90)
+    local offsetVector = {x = cos(perpAngle)*spawnOffset, y = sin(perpAngle)*spawnOffset}
 
     local newParticle
         
@@ -220,7 +220,19 @@ function ParticleEmitter:spawn(spawnForce)
     end
 end
 
-function ParticleEmitter:update()
+--todo make this play nicely with other bursts
+function ParticleEmitter:burst(burstSize)
+    self.maxParticles += burstSize
+    for i=1, burstSize do
+        randomForce = forceRandomRange(self.emissionAngle,self.emissionSpread,self.emissionForce)
+        self:spawnParticle({x=randomForce.x*self.worldScale,y=randomForce.y*self.worldScale})
+    end
+    self.maxParticles -= burstSize
+end
+
+
+
+function ParticleEmitter:updateParticles()
     local currentParticle
     local currentParticleTime
     local randomForce
@@ -228,21 +240,6 @@ function ParticleEmitter:update()
     --todo: allow more forces than gravity
     local gForce = {x=0,y=self.gravity*self.worldScale*dt}
 
-    self.spawnTime+=dt
-    self.position.x+=self.velocity.x*dt
-    self.position.y+=self.velocity.y*dt
-
-    if self.spawnTime>(1/self.emissionRate) and self.spawning then
-        numParticles = math.floor(self.spawnTime*self.emissionRate)
-        for i=1, numParticles do
-            --todo: allow for other spawn patterns
-            randomForce = forceRandomRange(self.emissionAngle,self.emissionSpread,self.emissionForce)
-            self:spawn({x=randomForce.x*self.worldScale,y=randomForce.y*self.worldScale},numParticles-i)
-        end
-
-        self.spawnTime -= numParticles/self.emissionRate
-    end
-    
     for i=#self.particles,1,-1 do
         currentParticle = self.particles[i]
         if currentParticle.active then
@@ -276,6 +273,27 @@ function ParticleEmitter:update()
             end
         end
     end
+end
+
+function ParticleEmitter:update()
+
+    self.spawnTime+=dt
+    self.position.x+=self.velocity.x*dt
+    self.position.y+=self.velocity.y*dt
+
+    if self.spawnTime>(1/self.emissionRate) and self.spawning then
+        numParticles = math.floor(self.spawnTime*self.emissionRate)
+        for i=1, numParticles do
+            --todo: allow for other spawn patterns
+            randomForce = forceRandomRange(self.emissionAngle,self.emissionSpread,self.emissionForce)
+            self:spawnParticle({x=randomForce.x*self.worldScale,y=randomForce.y*self.worldScale})
+        end
+
+        self.spawnTime -= numParticles/self.emissionRate
+    end
+    
+    self:updateParticles()
+
 end
 
 class('AnimatedParticleEmitter').extends(ParticleEmitter)

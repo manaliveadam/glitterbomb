@@ -210,6 +210,11 @@ function playdate.update()
         switchModes(1)
 	end
 
+    if playdate.buttonJustPressed( playdate.kButtonA ) then
+        currentSpawner:burst(25)
+    end
+
+
     crankChange = playdate.getCrankChange()
     if crankChange ~= 0 then
         crankAmount = crankChange * crankSpeed * dt
