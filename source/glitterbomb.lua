@@ -189,7 +189,7 @@ function ParticleEmitter:spawnParticle(spawnForce,index)
     local spawnOffset = (random() - 0.5) * self.emitterWidth * self.worldScale
     local perpAngle = rad(self.emissionAngle+90)
     local offsetVector = {x = cos(perpAngle)*spawnOffset, y = sin(perpAngle)*spawnOffset}
-    local spawnIndex = spawnIndex or #self.particles+1
+    local spawnIndex = index or #self.particles+1
 
     local newParticle
         
@@ -213,6 +213,7 @@ function ParticleEmitter:spawnParticle(spawnForce,index)
     else
         newParticle={position = {x=self.position.x + offsetVector.x, y=self.position.y + offsetVector.y}, velocity = spawnForce, image = self.image}
         table.insert(self.particles,spawnIndex,Particle.new(newParticle))
+        if self.particleIndex > spawnIndex then self.particleIndex += 1 end
     end
 
     if self.inheritVelocity then
@@ -228,7 +229,7 @@ function ParticleEmitter:burst(burstSize)
     self.maxParticles += burstSize
     for i=1, burstSize do
         randomForce = forceRandomRange(self.emissionAngle,self.emissionSpread,self.emissionForce)
-        self:spawnParticle({x=randomForce.x*self.worldScale,y=randomForce.y*self.worldScale})
+        self:spawnParticle({x=randomForce.x*self.worldScale,y=randomForce.y*self.worldScale},insertPoint)
     end
 end
 

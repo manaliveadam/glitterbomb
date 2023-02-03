@@ -201,9 +201,9 @@ local crankAmount
 
 function playdate.update()
     if playdate.buttonJustPressed( playdate.kButtonRight ) then
-        switchModes(1)
+        currentSpawner:setEmissionRate(currentSpawner.emissionRate + 5)
 	elseif playdate.buttonJustPressed( playdate.kButtonLeft ) then
-        switchModes(-1)
+        currentSpawner:setEmissionRate(currentSpawner.emissionRate - 5)
     elseif playdate.buttonJustPressed( playdate.kButtonDown ) then
         switchModes(-1)
 	elseif playdate.buttonJustPressed( playdate.kButtonUp ) then
@@ -225,8 +225,7 @@ function playdate.update()
         elseif modes[demoMode] == orbitSpawner then
             orbitEffect(crankAmount)
         elseif modes[demoMode] == hoseSpawner then
-            -- hoseEffect(crankAmount)
-            changeRate(crankAmount)
+            hoseEffect(crankAmount)
         end        
     elseif modes[demoMode] == sparkSpawner or modes[demoMode] == smokeSpawner then
         -- changeRate(-.1)
