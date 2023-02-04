@@ -93,16 +93,16 @@ function myGameSetUp()
     hoseSpawner:setGravity(9.8)
     hoseSpawner:setInheritVelocity(false)
 
-    -- burstSpawner=AnimatedParticleEmitter.new(smokeSheet)
-    -- burstSpawner:setNumFrames(60)
-    -- burstSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
-    -- burstSpawner:setParticleLifetime(2)
-    -- burstSpawner:setParticleUpdateDelay(2)
-    -- burstSpawner:setEmissionForce(1)
-    -- burstSpawner:setEmitterWidth(0)
-    -- burstSpawner:setEmissionSpread(360)
-    -- burstSpawner:setEmissionAngle(0)
-    -- burstSpawner:setGravity(0)
+    burstSpawner=AnimatedParticleEmitter.new(smokeSheet)
+    burstSpawner:setNumFrames(60)
+    burstSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
+    burstSpawner:setParticleLifetime(2)
+    burstSpawner:setParticleUpdateDelay(2)
+    burstSpawner:setEmissionForce(1)
+    burstSpawner:setEmitterWidth(0)
+    burstSpawner:setEmissionSpread(360)
+    burstSpawner:setEmissionAngle(0)
+    burstSpawner:setGravity(0)
 
     modes = {smokeSpawner,sparkSpawner,orbitSpawner,hoseSpawner}
     currentSpawner = modes[demoMode]
@@ -214,40 +214,39 @@ local crankAmount
 
 function playdate.update()
     if playdate.buttonJustPressed( playdate.kButtonRight ) then
-        currentSpawner:setEmissionRate(currentSpawner.emissionRate + 5)
+        switchModes(1)
 	elseif playdate.buttonJustPressed( playdate.kButtonLeft ) then
-        currentSpawner:setEmissionRate(currentSpawner.emissionRate - 5)
+        switchModes(-1)
     elseif playdate.buttonJustPressed( playdate.kButtonDown ) then
         switchModes(-1)
 	elseif playdate.buttonJustPressed( playdate.kButtonUp ) then
         switchModes(1)
 	end
 
-    if playdate.buttonJustPressed( playdate.kButtonA ) then
-        currentSpawner:burst(50)
-    end
-
-
     crankChange = playdate.getCrankChange()
     if crankChange ~= 0 then
         crankAmount = crankChange * crankSpeed * dt
-        if modes[demoMode] == sparkSpawner then
+        if currentSpawner == sparkSpawner then
             sparkEffect(crankAmount)
-        elseif modes[demoMode] == smokeSpawner then
+        elseif currentSpawner == smokeSpawner then
             smokeEffect(crankAmount)
-        elseif modes[demoMode] == orbitSpawner then
+        elseif currentSpawner == orbitSpawner then
             orbitEffect(crankAmount)
-        elseif modes[demoMode] == hoseSpawner then
+        elseif currentSpawner == hoseSpawner then
             hoseEffect(crankAmount)
         end        
-    elseif modes[demoMode] == sparkSpawner or modes[demoMode] == smokeSpawner then
-        -- changeRate(-.1)
+    elseif currentSpawner == sparkSpawner or currentSpawner == smokeSpawner then
+        changeRate(-.1)
+    end
+
+    if playdate.buttonJustPressed( playdate.kButtonA ) and currentSpawner = burstSpawner then
+        currentSpawner:burst(50)
     end
 
     dt = (playdate.getCurrentTimeMilliseconds() - lasttime)/1000
 	lasttime = playdate.getCurrentTimeMilliseconds()
 
-    for i,v in ipairs(modes) do if v.spawning or #v.particles+v.burstParticles>0 then v:update() end end
+    for i,v in ipairs(modes) do if v.spawning or #v.particles+#v.burstParticles>0 then v:update() end end
     
     Draw()
 end
