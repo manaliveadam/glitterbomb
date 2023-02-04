@@ -21,7 +21,7 @@ dt = 0
 lasttime = 0
 
 local startWidth, startRate, startAngle, startSpread
-local smokeSpawner, sparkSpawner, orbitSpawner, hoseSpawner
+local smokeSpawner, sparkSpawner, orbitSpawner, hoseSpawner, burstSpawner
 
 local currentSpawner
 local demoMode = 1
@@ -43,10 +43,10 @@ function myGameSetUp()
     --can either create emitters by passing a table with all the variable settings
     -- or by setting each variable manually (below)
     smokeSpawner=AnimatedParticleEmitter.new(smokeSheet)
-    smokeSpawner:setNumFrames(60)
+    -- smokeSpawner:setNumFrames(60)
     smokeSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
     smokeSpawner:setEmissionRate(0)
-    smokeSpawner:setParticleLifetime(2)
+    smokeSpawner:setParticleLifetime(4)
     smokeSpawner:setParticleUpdateDelay(2)
     smokeSpawner:setEmissionForce(1)
     smokeSpawner:setEmitterWidth(5.5)
@@ -56,7 +56,7 @@ function myGameSetUp()
     smokeSpawner:setInheritVelocity(false)
 
     sparkSpawner=AnimatedParticleEmitter.new(sparkSheet)
-    smokeSpawner:setNumFrames(30)
+    sparkSpawner:setNumFrames(30)
     sparkSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
     sparkSpawner:setEmissionRate(0)
     sparkSpawner:setParticleLifetime(1)
@@ -69,7 +69,7 @@ function myGameSetUp()
     sparkSpawner:setInheritVelocity(true)
 
     orbitSpawner=AnimatedParticleEmitter.new(smokeSheet)
-    smokeSpawner:setNumFrames(60)
+    orbitSpawner:setNumFrames(60)
     orbitSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
     orbitSpawner:setEmissionRate(8)
     orbitSpawner:setParticleLifetime(3)
@@ -92,6 +92,17 @@ function myGameSetUp()
     hoseSpawner:setEmissionAngle(270)
     hoseSpawner:setGravity(9.8)
     hoseSpawner:setInheritVelocity(false)
+
+    -- burstSpawner=AnimatedParticleEmitter.new(smokeSheet)
+    -- burstSpawner:setNumFrames(60)
+    -- burstSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
+    -- burstSpawner:setParticleLifetime(2)
+    -- burstSpawner:setParticleUpdateDelay(2)
+    -- burstSpawner:setEmissionForce(1)
+    -- burstSpawner:setEmitterWidth(0)
+    -- burstSpawner:setEmissionSpread(360)
+    -- burstSpawner:setEmissionAngle(0)
+    -- burstSpawner:setGravity(0)
 
     modes = {smokeSpawner,sparkSpawner,orbitSpawner,hoseSpawner}
     currentSpawner = modes[demoMode]
@@ -181,12 +192,14 @@ local function switchModes(direction)
     else
         currentSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
     end
-    currentSpawner:play()
+    if currentSpawner ~= burstSpawner then
+        currentSpawner:play()
+    end
 end
 
 local function Draw()
     gfx.clear()
-    for i,v in ipairs(modes) do if #v.particles>0 then v:draw() end end
+    for i,v in ipairs(modes) do if #v.particles+#v.burstParticles>0 then v:draw() end end
     voice:drawTextAligned("glitterbomb",screenWidth/2,screenHeight/2-40,kTextAlignment.center)
     gfx.drawTextAligned("crank to engage",screenWidth/2,screenHeight/2+15,kTextAlignment.center)
     gfx.drawTextAligned(demoMode,screenWidth/2,screenHeight/2+40,kTextAlignment.center)
@@ -211,7 +224,7 @@ function playdate.update()
 	end
 
     if playdate.buttonJustPressed( playdate.kButtonA ) then
-        currentSpawner:burst(25)
+        currentSpawner:burst(50)
     end
 
 
@@ -234,7 +247,7 @@ function playdate.update()
     dt = (playdate.getCurrentTimeMilliseconds() - lasttime)/1000
 	lasttime = playdate.getCurrentTimeMilliseconds()
 
-    for i,v in ipairs(modes) do if v.spawning or #v.particles>0 then v:update() end end
+    for i,v in ipairs(modes) do if v.spawning or #v.particles+v.burstParticles>0 then v:update() end end
     
     Draw()
 end

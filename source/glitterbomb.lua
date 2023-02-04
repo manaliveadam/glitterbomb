@@ -46,10 +46,6 @@ function Particle:setActive(state)
     self.active = state
 end
 
-function Particle:setFrameDelay(delay)
-    self.frameDelay = delay
-end
-
 function Particle:addForce(force)
     self.velocity.x += force.x
     self.velocity.y += force.y
@@ -88,6 +84,8 @@ function ParticleEmitter:init(image, newEmitter)
 
     self.particles = {}
     self.particleIndex = 1
+
+    self.burstParticles = {}
 
     self.particleLifetime = newEmitter.particleLifetime or 1
     self.particleUpdateDelay = newEmitter.particleUpdateDelay or  0
@@ -145,11 +143,13 @@ end
 
 --these are only used for generating sprite sheets
 function ParticleEmitter:setParticleSize(startSize,endSize)
+    --todo: allow for initial scaling of particle (maybe per particle?)
     self.startSize = startSize
     self.endSize = endSize or startSize
 end
 
 function ParticleEmitter:setParticleOpacity(startO,endO)
+    --todo: allow for initial opacity of particle (maybe per particle?)
     self.startOpacity = startO
     self.endOpacity = endO or startO
 end
@@ -183,13 +183,16 @@ function ParticleEmitter:draw()
             self.image:draw(v.position.x+self.drawOffset.x,v.position.y+self.drawOffset.y)
         end
     end
+
+    for i,v in ipairs(self.burstParticles) do
+        self.image:draw(v.position.x+self.drawOffset.x,v.position.y+self.drawOffset.y)
+    end
 end
 
-function ParticleEmitter:spawnParticle(spawnForce,index)
+function ParticleEmitter:spawnParticle(spawnForce)
     local spawnOffset = (random() - 0.5) * self.emitterWidth * self.worldScale
     local perpAngle = rad(self.emissionAngle+90)
     local offsetVector = {x = cos(perpAngle)*spawnOffset, y = sin(perpAngle)*spawnOffset}
-    local spawnIndex = index or #self.particles+1
 
     local newParticle
         
@@ -212,8 +215,7 @@ function ParticleEmitter:spawnParticle(spawnForce,index)
         end
     else
         newParticle={position = {x=self.position.x + offsetVector.x, y=self.position.y + offsetVector.y}, velocity = spawnForce, image = self.image}
-        table.insert(self.particles,spawnIndex,Particle.new(newParticle))
-        if self.particleIndex > spawnIndex then self.particleIndex += 1 end
+        self.particles[#self.particles+1] = Particle.new(newParticle)
     end
 
     if self.inheritVelocity then
@@ -222,14 +224,20 @@ function ParticleEmitter:spawnParticle(spawnForce,index)
     end
 end
 
---todo make this play nicely with other bursts
+function ParticleEmitter:burstSpawn(spawnForce)
+    local spawnOffset = (random() - 0.5) * self.emitterWidth * self.worldScale
+    local perpAngle = rad(self.emissionAngle+90)
+    local offsetVector = {x = cos(perpAngle)*spawnOffset, y = sin(perpAngle)*spawnOffset}
+
+    local newParticle
+    newParticle={position = {x=self.position.x + offsetVector.x, y=self.position.y + offsetVector.y}, velocity = spawnForce, image = self.image}
+    self.burstParticles[#self.burstParticles+1] = Particle.new(newParticle)
+end
+
 function ParticleEmitter:burst(burstSize)
-    local insertPoint = self.particleIndex - 1
-    if insertPoint <= 0 then insertPoint = #self.particles+1 end
-    self.maxParticles += burstSize
     for i=1, burstSize do
         randomForce = forceRandomRange(self.emissionAngle,self.emissionSpread,self.emissionForce)
-        self:spawnParticle({x=randomForce.x*self.worldScale,y=randomForce.y*self.worldScale},insertPoint)
+        self:burstSpawn({x=randomForce.x*self.worldScale,y=randomForce.y*self.worldScale})
     end
 end
 
@@ -272,6 +280,25 @@ function ParticleEmitter:updateParticles()
                 currentParticle:update()
                 if currentParticle.lifetime > self.particleLifetime then currentParticle.lifetime = self.particleLifetime end
             end
+        end
+    end
+
+    for i=#self.burstParticles,1,-1 do
+        currentParticle = self.burstParticles[i]
+        currentParticleTime = currentParticle.lifetime
+        lifePercent = currentParticleTime/self.particleLifetime
+        if lifePercent >= 1 then
+            --remove particles if the maximum decreased or spawner has been stopped (otherwise save for pooling)
+            table.remove(self.burstParticles,i)
+        else
+            if currentParticle.skipped >= self.particleUpdateDelay then
+                currentParticle.skipped = 0
+                currentParticle:addForce({x=gForce.x*(1+self.particleUpdateDelay),y=gForce.y*(1+self.particleUpdateDelay)})
+            else
+                currentParticle.skipped+=1
+            end
+            currentParticle:update()
+            if currentParticle.lifetime > self.particleLifetime then currentParticle.lifetime = self.particleLifetime end
         end
     end
 end
@@ -326,4 +353,11 @@ function AnimatedParticleEmitter:draw()
             currentImage:draw(v.position.x-self.drawOffset.x,v.position.y-self.drawOffset.y)
         end
     end
+
+    for i,v in ipairs(self.burstParticles) do
+        currentFrame = lerp(1,totalFrames,v.lifetime/self.particleLifetime)//1
+        currentImage = self.image:getImage(currentFrame)
+        currentImage:draw(v.position.x-self.drawOffset.x,v.position.y-self.drawOffset.y)
+    end
+    
 end
