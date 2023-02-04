@@ -2,7 +2,7 @@
 
 # The Basics
 
-The basic building block of glitterbomb is the **ParticleEmitter** class.  You initialize a ParticleEmitter by passing it an image to use for its particles like so:
+The basic building block of glitterbomb is the **ParticleEmitter** class.  You initialize a ParticleEmitter by passing it an image to use for its particles:
 
 ```
 newEmitter = ParticleEmitter.new(particleImage)
@@ -31,7 +31,7 @@ Right now, the default behavior is to emit particles randomly given certain para
 - **gravity** - The amount of gravity particles experience (can set to 0 to turn off)
 - **worldScale** - A helpful variable that lets you convert from your game's scale to the real world (for example, lets you think of particle velocity as m/s, 9.8 as physically accurate gravity, etc.)
 
-You can either set these variables on initialization by passing them as a table, like so:
+You can either set these variables on initialization by passing them as a table:
 ```
 emitterSettings = {emissionRate = 10, emissionForce = 2, emissionSpread = 45, particleLifetime = 2, worldScale = 50}
 newEmitter = ParticleEmitter.new(particleImage, emitterSettings)
@@ -67,14 +67,14 @@ Right now, you can get over 100 particles on device at 30FPS, though it's closer
 
 Originally I intended to support animating particle scale and opacity, but found it was too expensive to do every frame. To compensate I also created a second mini "app" called **glitterglue**. With glitterglue, you can create a ParticleEmitter, but rather than draw onscreen it draws a particle frame by frame to a sprite sheet so you can import it as an ImageTable to an AnimatedParticleEmitter later
 
-Simply create a ParticleEmitter and set starting and ending size and opacity values like so:
+Simply create a ParticleEmitter and set starting and ending size and opacity values:
 
 ```
 local spriteSheetSpawner = ParticleEmitter.new(spriteImg)
 spriteSheetSpawner:setParticleOpacity(1,0)
 spriteSheetSpawner:setParticleSize(1,0)
 ```
-The number of frames drawn to the sprite sheet is determined by the lifetime of the particle, as well as an option framerate value you can pass like so:
+The number of frames drawn to the sprite sheet is determined by the lifetime of the particle, as well as an option framerate value you can pass:
 ```
 spriteSheetSpawner:setParticleLifetime(1)
 glueSheet(spriteSheetSpawner,"spriteSheet.gif",30)
