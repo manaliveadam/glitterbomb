@@ -21,7 +21,7 @@ dt = 0
 lasttime = 0
 
 local startWidth, startRate, startAngle, startSpread
-local smokeSpawner, sparkSpawner, orbitSpawner, hoseSpawner, burstSpawner
+local smokeSpawner, sparkSpawner, orbitSpawner, hoseSpawner, burstSpawner, shapeSpawner
 
 local currentSpawner
 local demoMode = 1
@@ -92,18 +92,32 @@ function myGameSetUp()
     hoseSpawner:setGravity(9.8)
     hoseSpawner:setInheritVelocity(false)
 
-    burstSpawner=AnimatedParticleEmitter.new(smokeSheet)
-    burstSpawner:setNumFrames(60)
-    burstSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
-    burstSpawner:setParticleLifetime(1)
-    burstSpawner:setParticleUpdateDelay(2)
-    burstSpawner:setEmissionForce(3)
-    burstSpawner:setEmitterWidth(0)
-    burstSpawner:setEmissionSpread(360)
-    burstSpawner:setEmissionAngle(0)
-    burstSpawner:setGravity(0)
+    shapeSpawner=ShapeEmitter.new({shape = circle, filled = false, startSize = 2,endSize = 10, color = kColorBlack, lineWidth = 2})
+    shapeSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
+    shapeSpawner:setEmissionRate(100)
+    shapeSpawner:setParticleLifetime(1)
+    shapeSpawner:setParticleUpdateDelay(2)
+    shapeSpawner:setEmissionForce(2.5)
+    shapeSpawner:setEmitterWidth(0)
+    shapeSpawner:setEmissionSpread(15)
+    shapeSpawner:setEmissionAngle(90)
+    shapeSpawner:setGravity(9.8)
+    shapeSpawner:setInheritVelocity(false)
 
-    modes = {smokeSpawner,sparkSpawner,orbitSpawner,hoseSpawner, burstSpawner}
+    burstSpawner=ShapeEmitter.new({shape = circle, filled = true, radius = 50})
+    -- burstSpawner=AnimatedParticleEmitter(smokeSheet)
+    -- burstSpawner:setNumFrames(60)
+    burstSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
+    burstSpawner:setParticleLifetime(.5)
+    burstSpawner:setParticleUpdateDelay(2)
+    burstSpawner:setEmissionForce(2)
+    burstSpawner:setEmitterWidth(1)
+    burstSpawner:setEmissionSpread(0)
+    burstSpawner:setEmissionAngle(270)
+    burstSpawner:setGravity(0)
+    burstSpawner:setParticleSize(25,0)
+
+    modes = {shapeSpawner,smokeSpawner,sparkSpawner,orbitSpawner,hoseSpawner, burstSpawner}
     currentSpawner = modes[demoMode]
     currentSpawner:play()
 end
@@ -237,13 +251,15 @@ function playdate.update()
             orbitEffect(crankAmount)
         elseif currentSpawner == hoseSpawner then
             hoseEffect(crankAmount)
+        elseif currentSpawner == shapeSpawner then
+            changeRate(crankAmount)
         end        
     elseif currentSpawner == sparkSpawner or currentSpawner == smokeSpawner then
         changeRate(-.1)
     end
 
     if playdate.buttonJustPressed( playdate.kButtonA ) and currentSpawner == burstSpawner then
-        currentSpawner:burst(50)
+        currentSpawner:burst(10)
     end
 
     dt = (playdate.getCurrentTimeMilliseconds() - lasttime)/1000

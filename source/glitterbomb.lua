@@ -59,20 +59,14 @@ function Particle:update()
     -- self.sprite:moveTo(self.position.x//1,self.position.y//1)
 end
 
-class('ParticleEmitter').extends()
-function ParticleEmitter.new(image, newEmitter)
-    return ParticleEmitter(image, newEmitter)
+class('BaseEmitter').extends()
+function BaseEmitter.new(newEmitter)
+    return BaseEmitter(newEmitter)
 end
 
-function ParticleEmitter:init(image, newEmitter)
+function BaseEmitter:init(newEmitter)
 
     newEmitter = newEmitter or {}
-
-    self.image = image
-    self.drawOffset = {x=0,y=0}
-    self.drawOffset.x,self.drawOffset.y = self.image:getSize()
-    self.drawOffset.x /= 2
-    self.drawOffset.y /= 2
 
     self.position = newEmitter.position or {x=0,y=0}
 
@@ -88,7 +82,12 @@ function ParticleEmitter:init(image, newEmitter)
     self.burstParticles = {}
 
     self.particleLifetime = newEmitter.particleLifetime or 1
-    self.particleUpdateDelay = newEmitter.particleUpdateDelay or  0
+    self.particleUpdateDelay = newEmitter.particleUpdateDelay or 0
+    
+    self.startSize = newEmitter.startSize or 1
+    self.endSize = newEmitter.endSize or self.startSize
+    self.startOpacity = newEmitter.startOpacity or 1
+    self.endOpacity = newEmitter.endOpacity or self.startOpacity
 
     self.maxParticles = math.ceil(self.emissionRate * self.particleLifetime)
 
@@ -102,94 +101,82 @@ function ParticleEmitter:init(image, newEmitter)
 end
 
 --emitter settings
-function ParticleEmitter:setPosition(pos)
+function BaseEmitter:setPosition(pos)
     self.position = pos
 end
 
-function ParticleEmitter:setVelocity(v)
+function BaseEmitter:setVelocity(v)
     self.velocity = v
 end
 
-function ParticleEmitter:setEmissionRate(rate)
+function BaseEmitter:setEmissionRate(rate)
     self.emissionRate = rate
     self.maxParticles = math.ceil(self.emissionRate * self.particleLifetime)
 end
 
-function ParticleEmitter:setEmissionForce(force)
+function BaseEmitter:setEmissionForce(force)
     self.emissionForce = force
 end
 
-function ParticleEmitter:setEmitterWidth(width)
+function BaseEmitter:setEmitterWidth(width)
     self.emitterWidth = width
 end
 
-function ParticleEmitter:setEmissionAngle(angle)
+function BaseEmitter:setEmissionAngle(angle)
     self.emissionAngle = angle
 end
 
-function ParticleEmitter:setEmissionSpread(spread)
+function BaseEmitter:setEmissionSpread(spread)
     self.emissionSpread = spread
 end
 
 --particle settings
-function ParticleEmitter:setParticleLifetime(life)
+function BaseEmitter:setParticleLifetime(life)
     self.particleLifetime = life
     self.maxParticles = math.ceil(self.emissionRate * self.particleLifetime)
 end
 
-function ParticleEmitter:setParticleUpdateDelay(delay)
+function BaseEmitter:setParticleUpdateDelay(delay)
     self.particleUpdateDelay = delay
 end
 
 --these are only used for generating sprite sheets
-function ParticleEmitter:setParticleSize(startSize,endSize)
+function BaseEmitter:setParticleSize(startSize,endSize)
     --todo: allow for initial scaling of particle (maybe per particle?)
     self.startSize = startSize
     self.endSize = endSize or startSize
 end
 
-function ParticleEmitter:setParticleOpacity(startO,endO)
+function BaseEmitter:setParticleOpacity(startO,endO)
     --todo: allow for initial opacity of particle (maybe per particle?)
     self.startOpacity = startO
     self.endOpacity = endO or startO
 end
 
 --other settings
-function ParticleEmitter:setInheritVelocity(iv)
+function BaseEmitter:setInheritVelocity(iv)
     self.inheritVelocity = iv
 end
 
-function ParticleEmitter:setGravity(g)
+function BaseEmitter:setGravity(g)
     self.gravity = g
 end
 
-function ParticleEmitter:setWorldScale(scale)
+function BaseEmitter:setWorldScale(scale)
     self.worldScale = scale
 end
 
-function ParticleEmitter:pause()
+function BaseEmitter:pause()
     self.spawning = false
 end
 
-function ParticleEmitter:play()
+function BaseEmitter:play()
     self.spawnTime = 0
     self.spawning = true
 end
 
 --particle emitter functions
-function ParticleEmitter:draw()
-    for i,v in ipairs(self.particles) do
-        if v.active then
-            self.image:draw(v.position.x+self.drawOffset.x,v.position.y+self.drawOffset.y)
-        end
-    end
-
-    for i,v in ipairs(self.burstParticles) do
-        self.image:draw(v.position.x+self.drawOffset.x,v.position.y+self.drawOffset.y)
-    end
-end
-
-function ParticleEmitter:spawnParticle(spawnForce)
+function BaseEmitter:spawnParticle(spawnForce)
     local spawnOffset = (random() - 0.5) * self.emitterWidth * self.worldScale
     local perpAngle = rad(self.emissionAngle+90)
     local offsetVector = {x = cos(perpAngle)*spawnOffset, y = sin(perpAngle)*spawnOffset}
@@ -224,7 +211,7 @@ function ParticleEmitter:spawnParticle(spawnForce)
     end
 end
 
-function ParticleEmitter:burstSpawn(spawnForce)
+function BaseEmitter:burstSpawn(spawnForce)
     local spawnOffset = (random() - 0.5) * self.emitterWidth * self.worldScale
     local perpAngle = rad(self.emissionAngle+90)
     local offsetVector = {x = cos(perpAngle)*spawnOffset, y = sin(perpAngle)*spawnOffset}
@@ -234,14 +221,14 @@ function ParticleEmitter:burstSpawn(spawnForce)
     self.burstParticles[#self.burstParticles+1] = Particle.new(newParticle)
 end
 
-function ParticleEmitter:burst(burstSize)
+function BaseEmitter:burst(burstSize)
     for i=1, burstSize do
         randomForce = forceRandomRange(self.emissionAngle,self.emissionSpread,self.emissionForce)
         self:burstSpawn({x=randomForce.x*self.worldScale,y=randomForce.y*self.worldScale})
     end
 end
 
-function ParticleEmitter:updateParticles()
+function BaseEmitter:updateParticles()
     local currentParticle
     local currentParticleTime
     local randomForce
@@ -303,7 +290,7 @@ function ParticleEmitter:updateParticles()
     end
 end
 
-function ParticleEmitter:update()
+function BaseEmitter:update()
 
     self.spawnTime+=dt
     self.position.x+=self.velocity.x*dt
@@ -322,6 +309,35 @@ function ParticleEmitter:update()
     
     self:updateParticles()
 
+end
+
+class('ParticleEmitter').extends(BaseEmitter)
+function ParticleEmitter.new(image, newEmitter)
+    return ParticleEmitter(image, newEmitter)
+end
+
+function ParticleEmitter:init(image, newEmitter)
+
+    ParticleEmitter.super.init(self,newEmitter)
+    self.image = image
+    self.drawOffset = {x=0,y=0}
+    self.drawOffset.x,self.drawOffset.y = self.image:getSize()
+    self.drawOffset.x /= 2
+    self.drawOffset.y /= 2
+
+end
+
+--todo draw from oldest to newest
+function ParticleEmitter:draw()
+    for i,v in ipairs(self.particles) do
+        if v.active then
+            self.image:draw(v.position.x+self.drawOffset.x,v.position.y+self.drawOffset.y)
+        end
+    end
+
+    for i,v in ipairs(self.burstParticles) do
+        self.image:draw(v.position.x+self.drawOffset.x,v.position.y+self.drawOffset.y)
+    end
 end
 
 class('AnimatedParticleEmitter').extends(ParticleEmitter)
@@ -359,5 +375,95 @@ function AnimatedParticleEmitter:draw()
         currentImage = self.image:getImage(currentFrame)
         currentImage:draw(v.position.x-self.drawOffset.x,v.position.y-self.drawOffset.y)
     end
+    
+end
+
+circle = 0
+square = 1
+
+local filled
+
+local function drawSquare(self, x,y,r)
+    gfx.drawRect(x,y,r,r)
+end
+
+local function drawFilledSquare(self, x,y,r)
+    gfx.fillRect(x,y,r,r)
+end
+
+local function drawCircle(self, x,y,r)
+    gfx.drawCircleInRect(x,y,r,r)
+end
+
+local function drawFilledCircle(self, x,y,r)
+    gfx.fillCircleInRect(x,y,r,r)
+end
+
+class('ShapeEmitter').extends(BaseEmitter)
+function ShapeEmitter.new(newEmitter)
+    return ShapeEmitter(newEmitter)
+end
+
+function ShapeEmitter:init(newEmitter)
+    ShapeEmitter.super.init(self,newEmitter)
+
+    newEmitter = newEmitter or {}
+
+    self.shape = newEmitter.shape or circle
+    self.radius = newEmitter.radius or 5
+    self.filled = newEmitter.filled or false
+    self.color = newEmitter.color or gfx.kColorBlack
+    self.lineWidth = newEmitter.lineWidth or 1
+
+    self.animateSize = false
+    if self.startSize~=self.endSize then
+        self.animateSize = true
+    end
+
+    self.drawOffset = {x=0,y=0}
+    
+    self.drawOffset.x = self.startSize/2
+    self.drawOffset.y = self.startSize/2
+
+    self.drawFunc = drawCircle
+
+    if self.shape == circle then
+        if self.filled then
+            self.drawFunc = drawFilledCircle
+        else
+            self.drawFunc = drawCircle
+        end
+    elseif self.shape == square then
+        if self.filled then
+            self.drawFunc = drawFilledSquare
+        else
+            self.drawFunc = drawSquare
+        end
+    end
+    
+end
+
+function ShapeEmitter:draw()
+    local lifePercent
+    local currentSize = self.startSize
+    gfx.setColor(self.color)
+    gfx.setLineWidth(self.lineWidth)
+    for i,v in ipairs(self.particles) do
+        if v.active then
+            if self.animateSize then
+                lifePercent = v.lifetime/self.particleLifetime
+                currentSize = lerp(self.startSize,self.endSize,lifePercent)
+            end
+            self:drawFunc(v.position.x-self.drawOffset.x,v.position.y-self.drawOffset.y,currentSize)
+        end
+    end
+
+    for i,v in ipairs(self.burstParticles) do
+        if self.animateSize then
+            lifePercent = v.lifetime/self.particleLifetime
+            currentSize = lerp(self.startSize,self.endSize,lifePercent)
+        end
+    self:drawFunc(v.position.x-self.drawOffset.x,v.position.y-self.drawOffset.y,currentSize)
+end
     
 end
