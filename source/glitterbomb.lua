@@ -37,6 +37,7 @@ function Particle:init(newParticle)
     self.active = true
     self.position = newParticle.position
     self.velocity = newParticle.velocity
+    self.size = newParticle.size or 1
     self.skipped = 0
 
     self.lifetime = 0
@@ -145,6 +146,10 @@ function BaseEmitter:setParticleSize(startSize,endSize)
     --todo: allow for initial scaling of particle (maybe per particle?)
     self.startSize = startSize
     self.endSize = endSize or startSize
+    --not necessary for image particles
+    if self.startSize ~= self.endSize then
+        self.animateSize = true
+    end
 end
 
 function BaseEmitter:setParticleOpacity(startO,endO)
@@ -176,7 +181,7 @@ function BaseEmitter:play()
 end
 
 --particle emitter functions
-function BaseEmitter:spawnParticle(spawnForce)
+function BaseEmitter:spawnParticle(spawnForce,size)
     local spawnOffset = (random() - 0.5) * self.emitterWidth * self.worldScale
     local perpAngle = rad(self.emissionAngle+90)
     local offsetVector = {x = cos(perpAngle)*spawnOffset, y = sin(perpAngle)*spawnOffset}
@@ -190,6 +195,10 @@ function BaseEmitter:spawnParticle(spawnForce)
         newParticle.position.x = self.position.x + offsetVector.x
         newParticle.position.y =  self.position.y + offsetVector.y
         newParticle.velocity = spawnForce
+        --conditional logic for randomization
+        if self.randomize then
+            newParticle.size = random()*2
+        end
 
         newParticle.lifetime = 0
         newParticle.lastUpdate = 0
@@ -201,7 +210,7 @@ function BaseEmitter:spawnParticle(spawnForce)
             self.particleIndex = 1
         end
     else
-        newParticle={position = {x=self.position.x + offsetVector.x, y=self.position.y + offsetVector.y}, velocity = spawnForce, image = self.image}
+        newParticle={position = {x=self.position.x + offsetVector.x, y=self.position.y + offsetVector.y}, velocity = spawnForce, image = self.image, size = randomSize}
         self.particles[#self.particles+1] = Particle.new(newParticle)
     end
 
@@ -212,12 +221,14 @@ function BaseEmitter:spawnParticle(spawnForce)
 end
 
 function BaseEmitter:burstSpawn(spawnForce)
+    --maybe combine this section with generic spawn
     local spawnOffset = (random() - 0.5) * self.emitterWidth * self.worldScale
     local perpAngle = rad(self.emissionAngle+90)
     local offsetVector = {x = cos(perpAngle)*spawnOffset, y = sin(perpAngle)*spawnOffset}
+    local randomSize = (random()+.5)*3/2
 
     local newParticle
-    newParticle={position = {x=self.position.x + offsetVector.x, y=self.position.y + offsetVector.y}, velocity = spawnForce, image = self.image}
+    newParticle={position = {x=self.position.x + offsetVector.x, y=self.position.y + offsetVector.y}, velocity = spawnForce, image = self.image, size=randomSize}
     self.burstParticles[#self.burstParticles+1] = Particle.new(newParticle)
 end
 
@@ -420,6 +431,9 @@ function ShapeEmitter:init(newEmitter)
         self.animateSize = true
     end
 
+    self.anchorPoint = {x=.5,y=.5}
+    self.randomize = false
+
     self.drawOffset = {x=0,y=0}
     
     self.drawOffset.x = self.startSize/2
@@ -445,7 +459,11 @@ end
 
 function ShapeEmitter:draw()
     local lifePercent
+    --randomize
+    --animate
     local currentSize = self.startSize
+    local offsetX = currentSize * self.anchorPoint.x
+    local offsetY = currentSize * self.anchorPoint.y
     gfx.setColor(self.color)
     gfx.setLineWidth(self.lineWidth)
     for i,v in ipairs(self.particles) do
@@ -454,7 +472,14 @@ function ShapeEmitter:draw()
                 lifePercent = v.lifetime/self.particleLifetime
                 currentSize = lerp(self.startSize,self.endSize,lifePercent)
             end
-            self:drawFunc(v.position.x-self.drawOffset.x,v.position.y-self.drawOffset.y,currentSize)
+            --randomize
+            --animate
+            if self.animateSize or self.randomize then
+                offsetX = currentSize*v.size*self.anchorPoint.x
+                offsetY = currentSize*v.size*self.anchorPoint.y
+            end
+
+            self:drawFunc(v.position.x-offsetX,v.position.y-offsetY,currentSize*v.size)
         end
     end
 
@@ -463,7 +488,14 @@ function ShapeEmitter:draw()
             lifePercent = v.lifetime/self.particleLifetime
             currentSize = lerp(self.startSize,self.endSize,lifePercent)
         end
-    self:drawFunc(v.position.x-self.drawOffset.x,v.position.y-self.drawOffset.y,currentSize)
-end
-    
+
+        --randomize
+        --animate
+        if self.animateSize or self.randomize then
+            offsetX = currentSize*v.size*self.anchorPoint.x
+            offsetY = currentSize*v.size*self.anchorPoint.y
+        end
+
+        self:drawFunc(v.position.x-offsetX,v.position.y-offsetY,currentSize*v.size)
+    end    
 end
