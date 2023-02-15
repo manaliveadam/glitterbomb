@@ -439,7 +439,7 @@ function ShapeEmitter:init(newEmitter)
         self.animateSize = true
     end
 
-    self.anchorPoint = {x=.5,y=.5}
+    self.anchorPoint = newEmitter.anchorPoint or {x=.5,y=.5}
 
     self:updateDrawFunc()    
     

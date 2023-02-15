@@ -82,7 +82,7 @@ function myGameSetUp()
 
     hoseSpawner=ParticleEmitter.new(sparkImg)
     hoseSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
-    hoseSpawner:setEmissionRate(50)
+    hoseSpawner:setEmissionRate(75)
     hoseSpawner:setParticleLifetime(1)
     hoseSpawner:setParticleUpdateDelay(2)
     hoseSpawner:setEmissionForce(7.5)
@@ -115,6 +115,7 @@ function myGameSetUp()
     burstSpawner:setEmissionSpread(360)
     burstSpawner:setEmissionAngle(270)
     burstSpawner:setGravity(0)
+    burstSpawner:setEmissionRate(0)
 
     modes = {shapeSpawner,smokeSpawner,sparkSpawner,orbitSpawner,hoseSpawner, burstSpawner}
     currentSpawner = modes[demoMode]
@@ -226,7 +227,7 @@ local function Draw()
     gfx.drawTextAligned(demoMode,screenWidth/2,screenHeight/2+40,kTextAlignment.center)
 
     playdate.drawFPS(0, 0)
-    gfx.drawText(currentSpawner.emissionRate,screenWidth/2, 0)
+    gfx.drawText(currentSpawner.emissionRate + #currentSpawner.burstParticles,screenWidth/2, 0)
 end
 
 local crankSpeed = 1/12

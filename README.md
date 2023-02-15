@@ -14,6 +14,14 @@ There is also an **AnimatedParticleEmitter** class that you initialize by passin
 newAnimatedEmitter = AnimatedParticleEmitter.new(particleImageTable)
 ```
 
+And a **ShapeEmitter** class that you can pass various geometry parameters: shape (square or circle), bool for filled or not, color (using Playdate's colors), line width):
+
+```
+newShapeEmitter = ShapeEmitter.new(shapeParameters)
+```
+
+The ShapeEmitter also allows you to specify **startSize** and **endSize** to animate their size over time, as well as set a **randomScale** that will randomly scale particles between 1x and the randomScale value.
+
 You can manually position the emitter, or give it a velocity so it moves each frame.
 
 Right now, the default behavior is to emit particles randomly given certain parameters (discussed below) but could easily be changed to whatever pattern you want.
@@ -61,7 +69,7 @@ newEmitter:burst(numParticles)
 
 I've included a demo app so you can see some of the functionality and examples of how to use it.
 
-Right now, you can get over 100 particles on device at 30FPS, though it's closer to 50 if they're animated
+Right now, you can get over 100 particles on device at 30FPS, though it's closer to 50 if they're animated and 70 for shapes.
 
 # Creating Particle Sprite Sheets
 
