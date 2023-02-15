@@ -92,22 +92,21 @@ function myGameSetUp()
     hoseSpawner:setGravity(9.8)
     hoseSpawner:setInheritVelocity(false)
 
-    -- shapeSpawner=ShapeEmitter.new({shape = circle, filled = false, startSize = 5,endSize = 5, color = kColorBlack, lineWidth = 2})
-    shapeSpawner = AnimatedParticleEmitter(sparkSheet)
+    shapeSpawner=ShapeEmitter.new({shape = circle, filled = false, color = gfx.kColorXOR, lineWidth = 4, randomScale = 2})
     shapeSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
-    shapeSpawner:setEmissionRate(25)
-    shapeSpawner:setParticleLifetime(1)
+    shapeSpawner:setEmissionRate(0)
+    shapeSpawner:setParticleLifetime(2)
     shapeSpawner:setParticleUpdateDelay(2)
     shapeSpawner:setEmissionForce(2)
     shapeSpawner:setEmitterWidth(0)
-    shapeSpawner:setEmissionSpread(15)
-    shapeSpawner:setEmissionAngle(90)
-    shapeSpawner:setGravity(9.8)
+    shapeSpawner:setEmissionSpread(360)
+    shapeSpawner:setEmissionAngle(270)
+    shapeSpawner:setGravity(0)
     shapeSpawner:setInheritVelocity(false)
+    shapeSpawner:setParticleSize(0,25)
 
-    burstSpawner=ShapeEmitter.new({shape = circle, filled = false, color = gfx.kColorXOR, lineWidth = 4, randomScale = 2})
-    -- burstSpawner=AnimatedParticleEmitter(smokeSheet)
-    -- burstSpawner:setNumFrames(60)
+    burstSpawner=AnimatedParticleEmitter(smokeSheet)
+    burstSpawner:setNumFrames(60)
     burstSpawner:setPosition({x=screenWidth/2,y=screenHeight/2})
     burstSpawner:setParticleLifetime(2)
     burstSpawner:setParticleUpdateDelay(2)
@@ -116,7 +115,6 @@ function myGameSetUp()
     burstSpawner:setEmissionSpread(360)
     burstSpawner:setEmissionAngle(270)
     burstSpawner:setGravity(0)
-    burstSpawner:setParticleSize(25,0)
 
     modes = {shapeSpawner,smokeSpawner,sparkSpawner,orbitSpawner,hoseSpawner, burstSpawner}
     currentSpawner = modes[demoMode]
@@ -195,6 +193,11 @@ local function hoseEffect(amount)
     changeAngle(amount)
 end
 
+local function shapeEffect(amount)
+    changeRate(amount/2)
+    if currentSpawner.emissionRate > 50 then currentSpawner.emissionRate = 50 end
+end
+
 local function switchModes(direction)
     currentSpawner:pause()
     demoMode+=direction
@@ -251,11 +254,11 @@ function playdate.update()
         elseif currentSpawner == orbitSpawner then
             orbitEffect(crankAmount)
         elseif currentSpawner == hoseSpawner then
-            changeRate(crankAmount)
+            hoseEffect(crankAmount)
         elseif currentSpawner == shapeSpawner then
-            changeRate(crankAmount)
+            shapeEffect(crankAmount)
         end        
-    elseif currentSpawner == sparkSpawner or currentSpawner == smokeSpawner then
+    elseif currentSpawner == sparkSpawner or currentSpawner == smokeSpawner or currentSpawner == shapeSpawner then
         changeRate(-.1)
     end
 
