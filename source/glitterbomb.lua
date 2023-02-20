@@ -20,11 +20,15 @@ function lerp(starting,ending,percent)
 end
 
 --todo: allow for other spawning patterns besides random
+local newRandomForce = {x=0,y=0}
 local function forceRandomRange(angle,range,force)
     angle = angle + range * (random()-0.5)
     local x = cos(rad(angle))
     local y = sin(rad(angle))
-    return({x=x*force,y=y*force})
+    newRandomForce.x = x*force
+    newRandomForce.y = y*force
+
+    return newRandomForce
 end
 
 class('Particle').extends()
@@ -35,8 +39,12 @@ end
 
 function Particle:init(newParticle)
     self.active = true
-    self.position = newParticle.position
-    self.velocity = newParticle.velocity
+    self.position = {x=0,y=0}
+    self.velocity = {x=0,y=0}
+    self.position.x = newParticle.position.x
+    self.position.y = newParticle.position.y
+    self.velocity.x = newParticle.velocity.x
+    self.velocity.y = newParticle.velocity.y
     self.size = newParticle.size or 1
     self.skipped = 0
 
@@ -100,6 +108,12 @@ function BaseEmitter:init(newEmitter)
 
     self.spawning = newEmitter.spawning or false
     self.spawnTime = 0
+
+    --"holder" variables to avoid creating tables every frame (sometimes multiple times)
+    self.newParticleParameters = {position={x=0,y=0},velocity={x=0,y=0},size=0}
+    self.newForce = {x=0,y=0}
+    self.newGravity = {x=0,y=0}
+    self.newBurstForce = {x=0,y=0}
 end
 
 --emitter settings
@@ -189,19 +203,21 @@ end
 --particle emitter functions
 
 function BaseEmitter:generateParticleParameters(spawnForce)
+
     local spawnOffset = (random() - 0.5) * self.emitterWidth * self.worldScale
     local perpAngle = rad(self.emissionAngle+90)
-    local offsetVector = {x = cos(perpAngle)*spawnOffset, y = sin(perpAngle)*spawnOffset}
     local randomSize = 1 + random()*(self.randomScale-1)
     if randomSize < 1 then randomSize = 1 end
     
-    local parameters = {position = {x=self.position.x + offsetVector.x, y=self.position.y + offsetVector.y}, velocity = spawnForce, size = randomSize}
-
-    return parameters
+    self.newParticleParameters.position.x = self.position.x + cos(perpAngle)*spawnOffset
+    self.newParticleParameters.position.y = self.position.y + sin(perpAngle)*spawnOffset
+    self.newParticleParameters.velocity.x = spawnForce.x
+    self.newParticleParameters.velocity.y = spawnForce.y
+    self.newParticleParameters.size = randomSize
+    return self.newParticleParameters
 end
 
 function BaseEmitter:spawnParticle(spawnForce)
-
     local particleParameters = self:generateParticleParameters(spawnForce)
     local newParticle
         
@@ -211,7 +227,8 @@ function BaseEmitter:spawnParticle(spawnForce)
         newParticle = self.particles[self.particleIndex]
         newParticle.position.x = particleParameters.position.x
         newParticle.position.y =  particleParameters.position.y
-        newParticle.velocity = particleParameters.velocity
+        newParticle.velocity.x = particleParameters.velocity.x
+        newParticle.velocity.y = particleParameters.velocity.y
 
         newParticle.lifetime = 0
         newParticle.lastUpdate = 0
@@ -244,23 +261,31 @@ end
 function BaseEmitter:burst(burstSize)
     for i=1, burstSize do
         randomForce = forceRandomRange(self.emissionAngle,self.emissionSpread,self.emissionForce)
-        self:burstSpawn({x=randomForce.x*self.worldScale,y=randomForce.y*self.worldScale})
+        self.newBurstForce.x = randomForce.x*self.worldScale
+        self.newBurstForce.y = randomForce.y*self.worldScale
+        self:burstSpawn(self.newBurstForce)
     end
 end
 
 function BaseEmitter:updateParticles()
+
     local currentParticle
     local currentParticleTime
     local randomForce
     local numParticles
+
+    local emitterDelay = self.particleUpdateDelay
+    local emitterLifetime = self.particleLifetime
+
     --todo: allow more forces than gravity
-    local gForce = {x=0,y=self.gravity*self.worldScale*dt}
+    self.newGravity.x = 0
+    self.newGravity.y = self.gravity*self.worldScale*dt    
 
     for i=#self.particles,1,-1 do
         currentParticle = self.particles[i]
         if currentParticle.active then
             currentParticleTime = currentParticle.lifetime
-            lifePercent = currentParticleTime/self.particleLifetime
+            lifePercent = currentParticleTime/emitterLifetime
             if lifePercent >= 1 then
                 --remove particles if the maximum decreased or spawner has been stopped (otherwise save for pooling)
                 if #self.particles > self.maxParticles or self.spawning~=true then
@@ -276,16 +301,18 @@ function BaseEmitter:updateParticles()
 
                 else
                     currentParticle:setActive(false)
-                end
+                end            
             else
-                if currentParticle.skipped >= self.particleUpdateDelay then
+                if currentParticle.skipped >= emitterDelay then
                     currentParticle.skipped = 0
-                    currentParticle:addForce({x=gForce.x*(1+self.particleUpdateDelay),y=gForce.y*(1+self.particleUpdateDelay)})
+                    self.newForce.x = self.newGravity.x*(1+emitterDelay)
+                    self.newForce.y = self.newGravity.y*(1+emitterDelay)
+                    currentParticle:addForce(self.newForce)
                 else
                     currentParticle.skipped+=1
                 end
                 currentParticle:update()
-                if currentParticle.lifetime > self.particleLifetime then currentParticle.lifetime = self.particleLifetime end
+                if currentParticle.lifetime > emitterLifetime then currentParticle.lifetime = emitterLifetime end
             end
         end
     end
@@ -300,7 +327,9 @@ function BaseEmitter:updateParticles()
         else
             if currentParticle.skipped >= self.particleUpdateDelay then
                 currentParticle.skipped = 0
-                currentParticle:addForce({x=gForce.x*(1+self.particleUpdateDelay),y=gForce.y*(1+self.particleUpdateDelay)})
+                self.newForce.x = self.newGravity.x*(1+self.particleUpdateDelay)
+                self.newForce.y = self.newGravity.y*(1+self.particleUpdateDelay)
+                currentParticle:addForce(self.newForce)
             else
                 currentParticle.skipped+=1
             end
@@ -321,12 +350,15 @@ function BaseEmitter:update()
         for i=1, numParticles do
             --todo: allow for other spawn patterns
             randomForce = forceRandomRange(self.emissionAngle,self.emissionSpread,self.emissionForce)
-            self:spawnParticle({x=randomForce.x*self.worldScale,y=randomForce.y*self.worldScale})
+            self.newForce.x = randomForce.x*self.worldScale
+            self.newForce.y = randomForce.y*self.worldScale
+
+            self:spawnParticle(self.newForce)
         end
 
         self.spawnTime -= numParticles/self.emissionRate
     end
-    
+
     self:updateParticles()
 
 end
