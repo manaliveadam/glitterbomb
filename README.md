@@ -67,6 +67,19 @@ glitterbomb emitters are designed to continuously emit particles, however if you
 newEmitter:burst(numParticles)
 ```
 
+GlitterBomb uses a global delta variable called dt so you need to add it in your main update loop:
+```
+playdate.timer.updateTimers()
+dt = (playdate.getCurrentTimeMilliseconds() - lasttime)/1000
+lasttime = playdate.getCurrentTimeMilliseconds()
+```
+Finally, don't forget to update and draw your emitter:
+```
+newEmitter:update()
+newEmitter:draw()
+```
+
+
 I've included a demo app so you can see some of the functionality and examples of how to use it.
 
 Right now, you can get over 100 particles on device at 30FPS, though it's closer to 50 if they're animated and 70 for shapes.
